@@ -1,9 +1,8 @@
-import Link from 'next/link' // change page without reload
+import CreateItem from '../components/CreateItem'
 
 const Sell = props => (
   <div>
-    <p>Sell!</p>
-    
+    <CreateItem />
   </div>
 );
 
