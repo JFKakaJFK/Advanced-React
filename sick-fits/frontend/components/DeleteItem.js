@@ -32,7 +32,7 @@ class DeleteItem extends React.Component {
         update={this.update}>
         {(deleteItem, { error }) => (
           <button onClick={() => {
-            if (confirm('Are you sure you want to delete this item?')) deleteItem()
+            if (confirm('Are you sure you want to delete this item?')) deleteItem().catch(err => alert(err.message))
           }}>{this.props.children}</button>
         )}
       </Mutation>

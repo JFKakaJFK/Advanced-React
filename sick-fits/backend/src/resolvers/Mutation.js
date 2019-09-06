@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken')
 const { promisify } = require('util')
 const randomBytes = promisify(require('crypto').randomBytes)
 const { transport, toHTMLEmail } = require('../mail')
+const { hasPermission } = require('../utils')
 
 const Mutations = {
   async createItem(parent, args, ctx, info) {
@@ -41,8 +42,15 @@ const Mutations = {
     const item = await ctx.db.query.item({ where }, `{
       id
       title
+      user {
+        id
+      }
     }`)
-    // check permissions TODO
+    // check permissions
+    const ownsItem = item.user.id === ctx.request.userId
+    const hasPermissions = ctx.request.user.permissions.some(permission => ['ADMIN', 'ITEMDELETE'].includes(permission))
+    if (!(ownsItem || hasPermissions)) throw new Error('You do not have the required permissions')
+
     // delete
     return ctx.db.mutation.deleteItem({ where }, info)
   },
@@ -159,6 +167,30 @@ const Mutations = {
     })
 
     return updatedUser
+  },
+  async updatePermissions(parent, args, ctx, info) {
+    // check permissions
+    if (!ctx.request.userId) {
+      throw new Error('You must be logged in')
+    }
+    const currentUser = await ctx.db.query.user(
+      { where: { id: ctx.request.userId } },
+      info
+    )
+
+    hasPermission(currentUser, ['ADMIN', 'PERMISSIONUPDATE'])
+
+    // update permissions
+    return ctx.db.mutation.updateUser({
+      data: {
+        permissions: {
+          set: args.permissions
+        }
+      },
+      where: {
+        id: args.userId
+      }
+    }, info)
   }
 };
 
